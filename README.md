@@ -12,13 +12,14 @@ cargo run -- bfs --input test_graph.txt --source 0 --mode seq --out bfs_output.t
 
 # Test graphs creation
 ## Small
-cargo run --release -- generate line 100 test_graphs/line_small.txt
-cargo run --release -- generate star 100 test_graphs/star_small.txt
-cargo run --release -- generate random 100 500 test_graphs/random_small.txt
+cargo run --release -- generate line 100 line_small.txt
+cargo run --release -- generate star 100 star_small.txt
+cargo run --release -- generate cycle 100 cycle_small.txt
+cargo run --release -- generate random 100 500 random_small.txt
 
 ## Medium
-cargo run --release -- generate line 10000 test_graphs/line_medium.txt
-cargo run --release -- generate random 10000 50000 test_graphs/random_medium.txt
+cargo run --release -- generate line 10000 line_medium.txt
+cargo run --release -- generate random 10000 50000 random_medium.txt
 
 ## Big
-cargo run --release -- generate random 100000 1000000 test_graphs/random_large.txt
+cargo run --release -- generate random 100000 1000000 random_large.txt
