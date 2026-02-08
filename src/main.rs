@@ -5,6 +5,7 @@ mod bfs;
 mod cli;
 mod graph;
 mod graph_generator;
+mod pagerank;
 mod wcc;
 
 use bfs::bfs_parallel;
@@ -12,10 +13,11 @@ use bfs::bfs_sequential;
 use clap::Parser;
 use cli::{Cli, Commands};
 use graph::Graph;
+use pagerank::{pagerank_parallel, pagerank_sequential};
 use std::fs::File;
 use std::io::Write;
 use wcc::wcc_parallel;
-use wcc::wcc_sequential;
+use wcc::wcc_sequential; //koja je razlika izmedju ovog i use crate::wcc...?
 
 fn main() {
     let cli = Cli::parse();
@@ -144,9 +146,60 @@ fn main() {
             print_wcc_stats(&result);
         }
 
-        Commands::Pagerank { .. } => {
-            println!("Pagerank not implemented");
-            std::process::exit(1);
+        Commands::Pagerank {
+            input,
+            mode,
+            threads,
+            out,
+            alpha,
+            iters,
+            eps,
+        } => {
+            println!("Loading graph from: {}", input);
+            let graph = match Graph::from_file(&input) {
+                Ok(g) => {
+                    println!("Graph loaded: {} nodes", g.num_nodes);
+                    g
+                }
+                Err(e) => {
+                    eprintln!("Error loading graph: {}", e);
+                    std::process::exit(1);
+                }
+            };
+
+            let result = match mode.as_str() {
+                "seq" => {
+                    println!("Running sequential PageRank...");
+                    let start = std::time::Instant::now();
+                    let res = pagerank_sequential(&graph, alpha, iters, eps);
+                    let duration = start.elapsed();
+                    println!("PageRank finished in: {:?}", duration);
+                    res
+                }
+                "par" => {
+                    let threads = threads.unwrap_or(8);
+                    println!("Running parallel PageRank with {} threads...", threads);
+                    let start = std::time::Instant::now();
+                    let res = pagerank_parallel(&graph, alpha, iters, eps, threads);
+                    let duration = start.elapsed();
+                    println!("PageRank finished in: {:?}", duration);
+                    res
+                }
+                _ => {
+                    eprintln!("Error: mode must be 'seq' or 'par'");
+                    std::process::exit(1);
+                }
+            };
+
+            // match save_pagerank_result(&result, &out) {
+            //     Ok(_) => println!("Result saved to: {}", out),
+            //     Err(e) => {
+            //         eprintln!("Error saving result: {}", e);
+            //         std::process::exit(1);
+            //     }
+            // }
+
+            print_pagerank_stats(&result);
         }
 
         Commands::Generate {
@@ -208,6 +261,14 @@ fn save_wcc_result(result: &[usize], path: &str) -> std::io::Result<()> {
     Ok(())
 }
 
+fn save_pagerank_result(result: &[f64], path: &str) -> std::io::Result<()> {
+    let mut file = File::create(path)?;
+    for (node, rank) in result.iter().enumerate() {
+        writeln!(file, "{} {:.10}", node, rank)?;
+    }
+    Ok(())
+}
+
 fn print_bfs_stats(result: &[i32], source: usize) {
     let reachable = result.iter().filter(|&&d| d != -1).count();
     let unreachable = result.iter().filter(|&&d| d == -1).count();
@@ -227,4 +288,19 @@ fn print_wcc_stats(result: &[usize]) {
     println!("\nStatistics:");
     println!("   Total nodes: {}", result.len());
     println!("   Number of components: {}", components.len());
+}
+
+fn print_pagerank_stats(result: &[f64]) {
+    use crate::pagerank::top_nodes;
+
+    let sum: f64 = result.iter().sum();
+    let top = top_nodes(result, 10);
+
+    println!("\nStatistics:");
+    println!("   Total nodes: {}", result.len());
+    println!("   Sum of ranks: {:.10}", sum);
+    println!("   Top 10 nodes:");
+    for (i, (node, rank)) in top.iter().enumerate() {
+        println!("     {}. Node {}: {:.6}", i + 1, node, rank);
+    }
 }
