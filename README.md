@@ -7,8 +7,17 @@ cargo build --release
 ## Show commands
 cargo run -- --help
 
-## Run BFS
-cargo run -- bfs --input test_graph.txt --source 0 --mode seq --out bfs_output.txt
+## BFS
+- cargo run -- bfs --input test_graphs\random_small.txt --source 0 --mode seq --out bfs.txt
+- cargo run --release -- bfs --input test_graphs\random_small.medium --source 0 --mode par --out bfs.txt
+
+## WCC
+- cargo run --release -- wcc --input test_graphs\random_small.txt --mode seq --out wcc.txt
+- cargo run --release -- wcc --input test_graphs\random_small.txt --mode par --threads 8 --out wcc.txt
+
+## PAGERANK
+- cargo run --release -- pagerank --input test_graphs\random_small.txt --mode seq --alpha 0.85 --out pagerank.txt
+- cargo run --release -- pagerank --input test_graphs\random_small.txt --mode par --threads 8 --out pagerank.txt --alpha 0.85 --iters 50 --eps 1e-10
 
 # Test graphs creation
 mkdir -p test_graphs
