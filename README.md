@@ -8,7 +8,7 @@ cargo build --release
 cargo run -- --help
 
 ## BFS
-- cargo run -- bfs --input test_graphs\random_small.txt --source 0 --mode seq --out bfs.txt
+- cargo run --release -- bfs --input test_graphs\random_small.txt --source 0 --mode seq --out bfs.txt
 - cargo run --release -- bfs --input test_graphs\random_small.medium --source 0 --mode par --out bfs.txt
 
 ## WCC
