@@ -133,6 +133,164 @@ fn wcc_parallel_impl(graph: &Graph) -> Vec<usize> {
 
     (0..graph.num_nodes)
         .into_par_iter()
-        .map(|i| uf.find(i)) // Svaka nit radi find() na svom delu čvorova
+        .map(|i| uf.find(i))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_union_find_basic() {
+        let mut uf = UnionFind::new(5);
+
+        assert_eq!(uf.find(0), 0);
+        assert_eq!(uf.find(1), 1);
+        assert_eq!(uf.find(2), 2);
+
+        uf.union(0, 1);
+        assert_eq!(uf.find(0), uf.find(1));
+
+        uf.union(1, 2);
+        assert_eq!(uf.find(0), uf.find(2));
+
+        assert_ne!(uf.find(0), uf.find(3));
+        assert_ne!(uf.find(0), uf.find(4));
+    }
+
+    #[test]
+    fn test_wcc_simple() {
+        let graph = Graph {
+            num_nodes: 5,
+            edges: vec![
+                vec![1], // 0→1
+                vec![2], // 1→2
+                vec![],  // 2
+                vec![4], // 3→4
+                vec![],  // 4
+            ],
+        };
+
+        let result = wcc_sequential(&graph);
+
+        assert_eq!(result[0], result[1]);
+        assert_eq!(result[1], result[2]);
+
+        assert_eq!(result[3], result[4]);
+
+        assert_ne!(result[0], result[3]);
+    }
+
+    #[test]
+    fn test_wcc_all_connected() {
+        let graph = Graph {
+            num_nodes: 4,
+            edges: vec![vec![1], vec![2], vec![3], vec![]],
+        };
+
+        let result = wcc_sequential(&graph);
+
+        assert_eq!(result[0], result[1]);
+        assert_eq!(result[1], result[2]);
+        assert_eq!(result[2], result[3]);
+    }
+
+    #[test]
+    fn test_wcc_all_disconnected() {
+        let graph = Graph {
+            num_nodes: 4,
+            edges: vec![vec![], vec![], vec![], vec![]],
+        };
+
+        let result = wcc_sequential(&graph);
+
+        assert_ne!(result[0], result[1]);
+        assert_ne!(result[1], result[2]);
+        assert_ne!(result[2], result[3]);
+    }
+
+    #[test]
+    fn test_concurrent_union_find() {
+        let uf = ConcurrentUnionFind::new(5);
+
+        assert_eq!(uf.find(0), 0);
+        assert_eq!(uf.find(1), 1);
+
+        uf.union(0, 1);
+        assert_eq!(uf.find(0), uf.find(1));
+
+        uf.union(1, 2);
+        assert_eq!(uf.find(0), uf.find(2));
+    }
+
+    #[test]
+    fn test_wcc_parallel_vs_sequential() {
+        //0→1→2, 3→4
+        let graph = Graph {
+            num_nodes: 5,
+            edges: vec![vec![1], vec![2], vec![], vec![4], vec![]],
+        };
+
+        let seq_result = wcc_sequential(&graph);
+        let par_result = wcc_parallel(&graph, 4);
+
+        assert_eq!(
+            seq_result[0] == seq_result[1],
+            par_result[0] == par_result[1]
+        );
+        assert_eq!(
+            seq_result[1] == seq_result[2],
+            par_result[1] == par_result[2]
+        );
+
+        assert_eq!(
+            seq_result[3] == seq_result[4],
+            par_result[3] == par_result[4]
+        );
+
+        assert_ne!(par_result[0] == par_result[3], true);
+    }
+
+    #[test]
+    fn test_wcc_parallel_vs_sequential_large() {
+        use crate::graph_generator::generate_random;
+
+        let path = "test_wcc_parallel.txt";
+        generate_random(1000, 5000, path).unwrap();
+
+        let graph = Graph::from_file(path).unwrap();
+
+        let seq = wcc_sequential(&graph);
+        let par = wcc_parallel(&graph, 4);
+
+        use std::collections::HashSet;
+        let seq_components: HashSet<_> = seq.iter().collect();
+        let par_components: HashSet<_> = par.iter().collect();
+
+        assert_eq!(seq_components.len(), par_components.len());
+
+        std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn test_wcc_parallel_vs_sequential_disconnected() {
+        use crate::graph_generator::generate_disconnected;
+
+        let path = "test_wcc_parallel.txt";
+        generate_disconnected(1000, 5000, 11, path).unwrap();
+
+        let graph = Graph::from_file(path).unwrap();
+
+        let seq = wcc_sequential(&graph);
+        let par = wcc_parallel(&graph, 4);
+
+        use std::collections::HashSet;
+        let seq_components: HashSet<_> = seq.iter().collect();
+        let par_components: HashSet<_> = par.iter().collect();
+
+        assert_eq!(seq_components.len(), par_components.len());
+
+        std::fs::remove_file(path).ok();
+    }
 }

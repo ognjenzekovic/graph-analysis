@@ -58,9 +58,7 @@ fn bfs_parallel_impl(graph: &Graph, source: usize) -> Vec<i32> {
 
         current_level = next_level;
     }
-    dist.iter()
-        .map(|d| d.load(Ordering::Relaxed)) // load() čita vrednost iz AtomicI32
-        .collect()
+    dist.iter().map(|d| d.load(Ordering::Relaxed)).collect()
 }
 
 #[cfg(test)]
@@ -120,5 +118,74 @@ mod tests {
         assert_eq!(result[0], 0);
         assert_eq!(result[1], 1);
         assert_eq!(result[2], 2);
+    }
+
+    #[test]
+    fn test_bfs_parallel_vs_sequential() {
+        let graph = Graph {
+            num_nodes: 5,
+            edges: vec![
+                vec![1, 2], // 0→1, 0→2
+                vec![3],    // 1→3
+                vec![3],    // 2→3
+                vec![4],    // 3→4
+                vec![],     // 4
+            ],
+        };
+
+        let seq = bfs_sequential(&graph, 0);
+        let par = bfs_parallel(&graph, 0, 4);
+
+        for i in 0..graph.num_nodes {
+            assert_eq!(seq[i], par[i], "Node {}: seq={}, par={}", i, seq[i], par[i]);
+        }
+    }
+
+    #[test]
+    fn test_bfs_parallel_large() {
+        let graph = Graph {
+            num_nodes: 10,
+            edges: vec![
+                vec![1, 2, 3],
+                vec![4],
+                vec![5],
+                vec![6],
+                vec![7],
+                vec![8],
+                vec![9],
+                vec![0],
+                vec![0],
+                vec![0],
+            ],
+        };
+
+        let seq = bfs_sequential(&graph, 0);
+        let par = bfs_parallel(&graph, 0, 8);
+
+        assert_eq!(seq, par);
+    }
+
+    #[test]
+    fn test_bfs_parallel_disconnected() {
+        let graph = Graph {
+            num_nodes: 6,
+            edges: vec![
+                vec![1], // 0→1
+                vec![2], // 1→2
+                vec![],  // 2
+                vec![4], // 3→4
+                vec![5], // 4→5
+                vec![],  // 5
+            ],
+        };
+
+        let seq = bfs_sequential(&graph, 0);
+        let par = bfs_parallel(&graph, 0, 4);
+
+        assert_eq!(seq, par);
+
+        assert_eq!(par[3], -1);
+        assert_eq!(par[4], -1);
+        assert_eq!(par[5], -1);
     }
 }

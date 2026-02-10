@@ -206,6 +206,7 @@ fn main() {
             graph_type,
             num_nodes,
             num_edges,
+            num_components,
             output,
         } => {
             use graph_generator::*;
@@ -216,10 +217,21 @@ fn main() {
                 "complete" => generate_complete(num_nodes, &output),
                 "cycle" => generate_cycle(num_nodes, &output),
                 "random" => match num_edges {
-                    Some(edges) => generate_random(num_nodes, edges, &output),
+                    Some(edges) => generate_random_parallel(num_nodes, edges, &output),
                     None => {
                         eprintln!("Error: random graph demands number of edges");
                         eprintln!("   Example: cargo run -- generate random 100 500 output.txt");
+                        std::process::exit(1);
+                    }
+                },
+                "disconnected" => match (num_edges, num_components) {
+                    (Some(edges), Some(comps)) => {
+                        generate_disconnected(num_nodes, edges, comps, &output)
+                    }
+                    _ => {
+                        eprintln!(
+                            "Error: disconnected graph requires --num-edges and --num-components"
+                        );
                         std::process::exit(1);
                     }
                 },

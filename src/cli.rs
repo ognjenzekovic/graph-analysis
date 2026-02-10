@@ -71,9 +71,13 @@ pub enum Commands {
         #[arg(long)]
         num_nodes: usize,
 
-        //for random only
+        //for random and disconnected
         #[arg(long)]
         num_edges: Option<usize>,
+
+        //disconnected only
+        #[arg(long)]
+        num_components: Option<usize>,
 
         #[arg(long)]
         output: String,
