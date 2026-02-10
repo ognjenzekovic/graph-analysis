@@ -33,3 +33,13 @@ mkdir -p test_graphs
 
 ## Large
 - cargo run --release -- generate --graph-type random --num-nodes 1000000 --num-edges 10000000 --output test_graphs/random_l.txt
+
+# SCRIPT
+## getting started
+- cd ..
+- py -m venv venv
+- venv\Scripts\activate (Linux/mac - source venv/bin/activate)
+- cd .\graph_analysis
+- pip install -r requirements.txt
+## run
+- py benchmark.py
