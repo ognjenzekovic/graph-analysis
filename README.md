@@ -9,7 +9,7 @@ built in Rust with parallel implementations using Rayon.
 - PageRank: Node importance ranking for monitoring prioritization
 
 **Performance:**
-- Up to 4.9× speedup on 8 threads (1M nodes, 10M edges)
+- Up to 8.2× speedup on 8 threads (1M nodes, 10M edges)
 - Lock-free concurrent Union-Find with path compression
 - Atomic operations for thread-safe data structures
 
