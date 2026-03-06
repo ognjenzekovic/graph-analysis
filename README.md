@@ -57,3 +57,8 @@ mkdir -p test_graphs
 - pip install -r requirements.txt
 ## run
 - py benchmark.py
+
+
+## Benchmark from testing
+
+![Benchmark summary](banchmark-summary.png)
